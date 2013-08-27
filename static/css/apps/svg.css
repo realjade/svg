@@ -2,8 +2,10 @@
 	width: 100%;
 	height: 100%;
 }
-#svg { width: 600px; height:400px;border: 1px solid green;}
-.preview-svg{
+#svg {
+	height:100%;
+}
+.svg-canvas{
 	position: absolute;
 	top:0px;
 	left: 0px;
@@ -11,7 +13,28 @@
 	bottom: 0px;
 	overflow: hidden;
 }
-.preview-svg svg{
+.svg-tool{
+	position: absolute;
+	top:10px;
+	left: 10px;
+	width: 80px;
+	bottom: 10px;
+	background-color: #DDD;
+	border-top: 1px;
+	border-left: 1px;
+	border-right: 1px;
+	border-bottom: 2px;
+	border-bottom-color: #B7B7B7;
+	border-left-color: #CCC;
+	border-right-color: #CCC;
+	border-top-color: #CCC;
+	-webkit-box-shadow: 0 1px 0 0 #adadad;
+	box-shadow: 0 1px 0 0 #adadad;
+	border-style: solid;
+}
+.svg-canvas svg{
 	position: absolute;
 	background: #fff;
+	width: 100%;
+	height: 100%;
 }

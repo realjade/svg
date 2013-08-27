@@ -1,6 +1,7 @@
 $(function(){
 	$.fn.preview = function(loadUrl,options) {
-		var self = $(this);
+		var self = $(this),
+			preview;
 		init();
 		function init(){
 			self.options={
@@ -9,19 +10,21 @@ $(function(){
 				callback:jQuery.noop
 			};
 			jQuery.extend(self.options, options);
-			self['preview_'+self.options.type](loadUrl,self.options);
+			preview = self['preview_'+self.options.type](loadUrl,self.options);
 		}
 		function getType(fileName){
 			return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
 		}
-
+		return preview;
 	};
 	$.fn.preview_svg = function(loadUrl,options){
 		var self = $(this),
 			svgObj,
 			svgRoot,
-			previewPanel,
-			state,
+			toolPanel,//操作面板
+			canvasPanel,//预览面板
+			propPanel,//属性面板
+			state, //状态标示
 			NONE = 0,//无状态
 			PAN = 1,//平移
 			ZOOMIN = 2,//放大
@@ -34,10 +37,14 @@ $(function(){
 				callback:jQuery.noop
 			};
 			jQuery.extend(self.options, options);
-			previewPanel = $('<div class="preview-svg"></div>');
-			previewPanel.appendTo(self);
+			canvasPanel = $('<div class="svg-canvas"></div>');
+			canvasPanel.appendTo(self);
+			optPanel = $('<div class="svg-tool"></div>');
+			optPanel.appendTo(self);
+			propPanel = $('<div class="svg-prop"></div>');
+			propPanel.appendTo(self);
 			self.css({position:'relative',overflow:'hidden'});
-			previewPanel.svg({onLoad: loaded,loadURL: loadUrl});
+			canvasPanel.svg({onLoad: loaded,loadURL: loadUrl});
 		}
 		function loaded(svg){
 			svgObj = svg;
@@ -55,8 +62,8 @@ $(function(){
 		    //params['svg' + parts[1]] = values[opt][1];
 		}
 		function initViewBox(){
-			var w = self.width(),
-				h = self.height();
+			var w = canvasPanel.width(),
+				h = canvasPanel.height();
 			svgObj.configure({viewBox: '0, 0, '+w+', '+h});
 		}
 		function bindEvent(){
@@ -91,6 +98,7 @@ $(function(){
 		function clicked(event){
 
 		}
+		return self;
 	};
 	$('#svg').preview('/static/svg/linear.svg');
 	/**$('#svg').svg({onLoad: loaded,loadURL: '/static/svg/linear.svg'});
