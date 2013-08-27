@@ -74,29 +74,36 @@ $(function(){
 			//tools.log(svg);
 			//$('svg').svgPan('s1');
 			$(svgRoot).mousewheel(function(event, delta, deltaX, deltaY) {
-                var o = '';
-                if (delta > 0)
-                    o = '#test2: up ('+delta+')';
-                else if (delta < 0)
-                    o = '#test2: down ('+delta+')';
-
-                if (deltaX > 0)
-                    o = o + ', east ('+deltaX+')';
-                else if (deltaX < 0)
-                    o = o + ', west ('+deltaX+')';
-
-                if (deltaY > 0)
-                    o = o + ', north ('+deltaY+')';
-                else if (deltaY < 0)
-                    o = o + ', south ('+deltaY+')';
-
-                if( o != '' )
-                    tools.log( o );
+				if(delta > 0){
+					zoomIn();
+				}else{
+					zoomOut();
+				}
                 return false; // prevent default
             });
 		}
 		function clicked(event){
 
+		}
+		function zoomIn(){
+			var w = $(svgRoot).width(),
+				h = $(svgRoot).height(),
+				f = 1.5;
+			tools.log(w);
+			tools.log(h);
+			w *= f;
+			h *= f;
+			svgObj.configure({width:w,height:h});
+		}
+		function zoomOut(){
+			var w = $(svgRoot).width(),
+				h = $(svgRoot).height(),
+				f = 1.5;
+			tools.log(w);
+			tools.log(h);
+			w /= f;
+			h /= f;
+			svgObj.configure({width:w,height:h});
 		}
 		return self;
 	};
