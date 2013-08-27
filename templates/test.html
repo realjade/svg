@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block stylesheets %}
+  <link type="text/css" rel="stylesheet" href="{{ '/static/css/apps/test.css'|staticurl }}" />
+{% endblock %}
+{% block scripts %}
+  <!--script src="http://api.map.baidu.com/api?v=1.5&ak=84901b49cdd30d61000a6850331903f6" type="text/javascript"></script-->
+  <script src="{{ '/static/js/lib/map/EventWrapper.js'|staticurl }}"></script>
+  <script src="{{ '/static/js/lib/Oak3D_Debug.js'|staticurl }}"></script>
+  <script src="{{ '/static/js/apps/test.js'|staticurl }}"></script>
+  <script id="shader-fs" type="x-shader/x-fragment">  
+    #ifdef GL_ES  
+    precision highp float;  
+    #endif  
+   
+    void main(void) {  
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);  
+    }  
+  </script>  
+   
+  <script id="shader-vs" type="x-shader/x-vertex">  
+    attribute vec3 aVertexPosition;  
+   
+    uniform mat4 modelViewMatrix;  
+    uniform mat4 projectionMatrix;  
+   
+    void main(void) {  
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(aVertexPosition, 1.0);  
+    }  
+  </script>  
+{% endblock %}
+{% block mainbody %}
+<div class="center">
+    <div class="main-left">
+        
+    </div>
+    <div class="main-right">
+    	 <canvas id="webgl" style="border: none;" width="500" height="500"></canvas>   
+    </div>
+</div>
+{% endblock %}

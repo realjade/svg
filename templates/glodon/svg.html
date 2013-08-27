@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block stylesheets %}
+  <link type="text/css" rel="stylesheet" href="{{ '/static/css/apps/svg.css'|staticurl }}" />
+{% endblock %}
+{% block scripts %}
+  <script src="/static/js/lib/jquery/jquery.mousewheel.js"></script>
+  <script src="/static/js/lib/svg/jquery.svg.js"></script>
+  <script src="/static/js/lib/svg/jquery.svgdom.js"></script>
+  <script src="/static/js/lib/svg/jquery.svganim.js"></script>
+  <script src="/static/js/lib/svg/jquery-svgpan.js"></script>
+  <script src="{{ '/static/js/apps/svg.js'|staticurl }}"></script>
+{% endblock %}
+{% block mainbody %}
+<div class="center">
+    <div class="main-left">
+      <div id="animate" class="btn">自动播放</div>
+      <div id="unanimate" class="btn">停止播放</div>
+        <button id="rect">Add rectangle</button> 
+        <button id="line">Add line</button>
+        <button id="circle">Add circle</button> 
+        <button id="ellipse">Add ellipse</button>
+        <button id="clear">Clear</button> 
+        <button id="export">Export</button>
+      </div>
+    <div class="main-right">
+      <div id="svg"></div>
+    </div>
+</div>
+{% endblock %}

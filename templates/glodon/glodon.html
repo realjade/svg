@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block stylesheets %}
+  <link type="text/css" rel="stylesheet" href="{{ '/static/css/apps/glodon.css'|staticurl }}" />
+{% endblock %}
+{% block scripts %}
+  <script src="/static/js/lib/threejs/three.js"></script>
+  <script src="/static/js/lib/threejs/js/controls/OrbitControls.js"></script>
+  <script src="/static/js/lib/threejs/js/controls/EditorControls.js"></script>
+  <script src="/static/js/lib/threejs/js/controls/TrackballControls.js"></script>
+  <script src="/static/js/lib/threejs/js/loaders/STLLoader.js"></script>
+  <script src="/static/js/lib/threejs/js/loaders/ColladaLoader.js"></script>
+  <script src="/static/js/lib/threejs/Detector.js"></script>
+  <script src="/static/js/lib/stats.min.js"></script>
+  <script src="/static/js/lib/svg/jquery.svg.js"></script>
+  <script src="/static/js/lib/svg/jquery.svgdom.js"></script>
+  <script src="{{ '/static/js/apps/glodon.js'|staticurl }}"></script>
+{% endblock %}
+{% block mainbody %}
+<div class="center">
+    <div class="main-left">
+    </div>
+    <div class="main-right">
+    	 <div id="webgl"></div>
+    </div>
+</div>
+{% endblock %}

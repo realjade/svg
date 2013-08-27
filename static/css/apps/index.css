@@ -1,0 +1,22 @@
+.font-wrap {
+  white-space: nowrap;
+  overflow: hidden;
+  -o-text-overflow: ellipsis;
+  text-overflow: ellipsis;
+}
+.toolbar{
+    background: url('../../images/b/toolbar.gif') repeat-x 0 0;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top:0px;
+    height:32px; 
+}
+#map{
+  position: absolute;
+  top:32px;
+  left: 0px;
+  right: 0px;
+  bottom: 0px;
+  min-width: 724px;
+}

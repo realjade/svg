@@ -1,0 +1,17 @@
+#webgl{
+	width: 100%;
+	height: 100%;
+}
+#svg { width: 600px; height:400px;border: 1px solid green;}
+.preview-svg{
+	position: absolute;
+	top:0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	overflow: hidden;
+}
+.preview-svg svg{
+	position: absolute;
+	background: #fff;
+}

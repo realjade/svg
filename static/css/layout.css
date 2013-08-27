@@ -1,0 +1,41 @@
+/*基本类和函数*/
+.font-wrap{
+	white-space:nowrap;
+	overflow:hidden;
+	-o-text-overflow:ellipsis;
+	text-overflow:ellipsis
+}
+header .logo{
+	display:block;
+	float:left;
+}
+header .logo img{
+	width:140px;
+	height:40px
+}
+.center{
+	position: absolute;
+	top:52px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	background: #999;
+}
+.main-left{
+	position: absolute;
+	top:0px;
+	left: 0px;
+	bottom: 0px;
+	overflow: auto;
+	width: 300px;
+	border-right: 1px solid #e8e8e8;
+	background: #f7f7f7;
+}
+.main-right{
+	position: absolute;
+	top:0px;
+	left: 301px;
+	right: 0px;
+	bottom: 0px;
+	overflow: hidden;
+}

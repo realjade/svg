@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block stylesheets %}
+  <link type="text/css" rel="stylesheet" href="{{ '/static/css/apps/index.css'|staticurl }}" />
+{% endblock %}
+{% block scripts %}
+  <script src="http://api.map.baidu.com/api?v=1.5&ak=84901b49cdd30d61000a6850331903f6" type="text/javascript"></script>
+  <script src="{{ '/static/js/lib/map/EventWrapper.js'|staticurl }}"></script>
+  <script src="{{ '/static/js/apps/index.js'|staticurl }}"></script>
+{% endblock %}
+{% block mainbody %}
+<div class="center">
+    <div class="main-left">
+
+    </div>
+    <div class="main-right">
+        <div class="toolbar">
+          <div class="city"></div>
+          <div class="weather"></div>
+        </div>
+        <div id="map"></div>
+    </div>
+</div>
+{% endblock %}

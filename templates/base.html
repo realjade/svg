@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="cn">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}WEBGL{% endblock %}</title>
+  <!--[if lt IE 9]><script src="{{ '/static/js/lib/html5.js'|staticurl }}"></script><![endif]-->
+  <!--[if lt IE 7]><script src="{{ '/static/js/lib/belatedpng.js'|staticurl }}"></script><![endif]-->
+  <link type="text/css" rel="stylesheet" href="{{ '/static/js/lib/bootstrap/css/bootstrap.css'|staticurl }}" />
+  <link type="text/css" rel="stylesheet" href="{{ '/static/css/gutestun.css'|staticurl }}" />
+  <link type="text/css" rel="stylesheet" href="{{ '/static/css/layout.css'|staticurl }}" />
+  <!--[if IE 6]><link type="text/css" rel="stylesheet" href="{{ '/static/css/ie6.css'|staticurl }}" /><![endif]-->
+</head>
+<body>
+{% block header %}
+    {% include 'inc/header.html' %}
+{% endblock %}
+{% block mainbody %}
+{% endblock %}
+{% block stylesheets %}{% endblock %}
+  <script type="text/javascript" src="{{ '/static/js/lib/sea.js'|staticurl }}"></script>
+  <script type="text/javascript" src="{{ '/static/js/lib/jquery/jquery.js'|staticurl }}"></script>
+  <script type="text/javascript" src="{{ '/static/js/lib/bootstrap/js/bootstrap.js'|staticurl }}"></script>
+  <script type="text/javascript" src="{{ '/static/js/lib/json2.js'|staticurl }}"></script>
+  <script type="text/javascript" src="{{ '/static/js/lib/common.js'|staticurl }}"></script>
+  {%- block scripts %}{% endblock -%}
+</body>
+</html>
