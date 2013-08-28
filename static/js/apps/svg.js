@@ -24,6 +24,17 @@ $(function(){
 			toolPanel,//操作面板
 			canvasPanel,//预览面板
 			propPanel,//属性面板
+			width,//宽度
+			height,//高度
+			scale = 1,//缩放比例
+			startX,//开始X坐标
+			startY,//开始Y坐标
+			endX,//结束X坐标
+			endY,//结束Y坐标
+			moveTimer,//移动计时器
+			moveTimerDelta = 100,//移动时每隔500ms处理一次
+			left = 0,//SVG左边距离
+			top = 0,//SVG上面距离
 			state, //状态标示
 			NONE = 0,//无状态
 			PAN = 1,//平移
@@ -48,13 +59,12 @@ $(function(){
 		}
 		function loaded(svg){
 			svgObj = svg;
-			svgRoot = svg.root();
+			svgRoot = $(svg.root());
 			tools.log(svg);
 			tools.log(svg.root());
-			tools.log(svg._svg);
-			tools.log(svg._svg == svg.root());
 			initViewBox();
 			bindEvent();
+			tools.log($('#text'));
 			//svg.configure({viewBox: '100, 0, 300, 200'});
 			//var opt = 'svg:ViewBox'; 
 		    //var parts = opt.split(':');
@@ -64,16 +74,21 @@ $(function(){
 		function initViewBox(){
 			var w = canvasPanel.width(),
 				h = canvasPanel.height();
+			width = w;
+			height = h;
 			svgObj.configure({viewBox: '0, 0, '+w+', '+h});
 		}
 		function bindEvent(){
 			//窗口改变后自动改变大小
 			$(window).resize(initViewBox);
-			$(svgRoot).bind('click', clicked);//. bind('mouseover', svgOver).bind('mouseout', svgOut);
+			svgRoot.bind('click', svgClick);
+			$('g',svgRoot).bind('mouseover', svgOver).bind('mouseout', svgOut);
+			svgRoot.bind('mousedown',svgMouseDown).bind('mouseup',svgMouseUp).bind('mousemove',svgMouseMove);
+				   //.bind('mouseover', svgOver).bind('mouseout', svgOut)
 		    //$(svg._svg).animate(params, 2000); 
 			//tools.log(svg);
-			//$('svg').svgPan('s1');
-			$(svgRoot).mousewheel(function(event, delta, deltaX, deltaY) {
+			//$('svg').svgPan('text');
+			self.mousewheel(function(event, delta, deltaX, deltaY) {
 				if(delta > 0){
 					zoomIn();
 				}else{
@@ -82,32 +97,90 @@ $(function(){
                 return false; // prevent default
             });
 		}
-		function clicked(event){
+		function getEventPoint(event){
+			return {x:event.offsetX || event.pageX,y:event.offsetY || event.pageY};
+		}
+		//鼠标点击
+		function svgClick(event){
+			tools.log('mouseclick');
+			tools.log(event);
+			tools.log(event.target);
 
 		}
-		function zoomIn(){
-			var w = $(svgRoot).width(),
-				h = $(svgRoot).height(),
-				f = 1.5;
-			tools.log(w);
-			tools.log(h);
-			w *= f;
-			h *= f;
-			svgObj.configure({width:w,height:h});
+		//鼠标按下
+		function svgMouseDown(event){
+			var point = getEventPoint(event);
+			startX = point.x;
+			startY = point.y;
+			tools.log('start:'+startX+','+startY);
+			state = PAN;
 		}
+		//鼠标向上
+		function svgMouseUp(event){
+			state = NONE;
+		}
+		//鼠标移动
+		function svgMouseMove(event){
+			if(state != PAN) return false;
+			var now = Date.now();
+			if(moveTimer && (now - moveTimer) < moveTimerDelta) return false;
+			moveTimer = now;
+			var point = getEventPoint(event);
+			endX = point.x;
+			endY = point.y;
+			tools.log('end:'+endX+','+endY);
+			deltaX = endX - startX;
+			deltaY = endY - startY;
+			tools.log(deltaX+','+deltaY);
+			left += deltaX;
+			top += deltaY;
+			if(left >= 0){
+				left = 0;
+			}
+			if(top >= 0){
+				top = 0;
+			}
+			tools.log('left:'+left);
+			svgRoot.css('left',left);
+			svgRoot.css('top',top);
+		}
+		//鼠标经过
+		function svgOver(event){
+			tools.log(this);
+			tools.log('mouseover');
+			tools.log(event);
+		}
+		//鼠标移开
+		function svgOut(event){
+			tools.log('mouseout');
+			tools.log(event);
+		}
+		//状态管理
+		function stateManger(){
+
+		}
+		//放大
+		function zoomIn(){
+			scale += 1;
+			svgObj.configure({width:width*scale,height:height*scale});
+		}
+		//缩小
 		function zoomOut(){
-			var w = $(svgRoot).width(),
-				h = $(svgRoot).height(),
-				f = 1.5;
-			tools.log(w);
-			tools.log(h);
-			w /= f;
-			h /= f;
-			svgObj.configure({width:w,height:h});
+			if(scale <=1 ){
+				scale = 1;
+				return false;
+			}
+			scale -= 1;
+			svgObj.configure({width:width*scale,height:height*scale});
+		}
+		//平移
+		function pan(delta){
+
 		}
 		return self;
 	};
-	$('#svg').preview('/static/svg/linear.svg');
+	$('#svg').preview('/static/svg/qpen05cm.svg');
+	//$('#svg').preview('/static/svg/linear.svg');
 	/**$('#svg').svg({onLoad: loaded,loadURL: '/static/svg/linear.svg'});
 	var values = {};
 	values['svg:ViewBox'] = ['0, 0, 600, 350', '150, 87, 300, 175'];
