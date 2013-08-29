@@ -18,12 +18,13 @@ $(function(){
 		return preview;
 	};
 	$.fn.preview_svg = function(loadUrl,options){
+		svgObj = null;
 		var self = $(this),
-			svgObj,
 			svgRoot,
 			toolPanel,//操作面板
 			canvasPanel,//预览面板
 			propPanel,//属性面板
+			fontSize = 24,//字体设置大小,主要解决chrome下12px显示问题
 			width,//宽度
 			height,//高度
 			scale = 1,//缩放比例
@@ -60,8 +61,7 @@ $(function(){
 		function loaded(svg){
 			svgObj = svg;
 			svgRoot = $(svg.root());
-			tools.log(svg);
-			tools.log(svg.root());
+			changeTextSize();
 			initViewBox();
 			bindEvent();
 			tools.log($('#text'));
@@ -78,6 +78,27 @@ $(function(){
 			height = h;
 			svgObj.configure({viewBox: '0, 0, '+w+', '+h});
 		}
+		//改变字体大小,解决chrome下12px以下字体显示问题。做一次字体设置和大小变换
+		function changeTextSize(){
+			$('text',svgRoot).each(function(){
+				var text = $(this),
+					size = text.attr('font-size'),
+					trans = text.attr('transform').split('(')[1].split(')')[0].split(' '),
+					ctm = svgRoot[0].createSVGMatrix();
+				ctm.a = trans[0];
+				ctm.b = trans[1];
+				ctm.c = trans[2];
+				ctm.d = trans[3];
+				ctm.e = trans[4];
+				ctm.f = trans[5];
+				var s = size/fontSize;
+				var k = svgRoot[0].createSVGMatrix().scale(s);
+				var matrix = ctm.multiply(k);
+				var t = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
+                text.attr("transform", t);
+                text.attr('font-size',fontSize);
+			});
+		}
 		function bindEvent(){
 			//窗口改变后自动改变大小
 			$(window).resize(initViewBox);
@@ -87,7 +108,7 @@ $(function(){
 				   //.bind('mouseover', svgOver).bind('mouseout', svgOut)
 		    //$(svg._svg).animate(params, 2000); 
 			//tools.log(svg);
-			//$('svg').svgPan('text');
+			//$('svg').svgPan('tt');
 			self.mousewheel(function(event, delta, deltaX, deltaY) {
 				if(delta > 0){
 					zoomIn();
@@ -179,7 +200,7 @@ $(function(){
 		}
 		return self;
 	};
-	$('#svg').preview('/static/svg/qpen05cm.svg');
+	$('#svg').preview('/static/svg/erul4egd.svg');
 	//$('#svg').preview('/static/svg/linear.svg');
 	/**$('#svg').svg({onLoad: loaded,loadURL: '/static/svg/linear.svg'});
 	var values = {};

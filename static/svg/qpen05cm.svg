@@ -2312,7 +2312,7 @@
 <polyline points="383.976,472.087 383.976,486.628 " Geom_Id="1983" />
 </g>
 <g stroke-width="0.25" clip-path="url(#clipId0)" fill="rgb(255,0,0)" stroke="none" Geom_Id="1984">
-<text transform="matrix(4.34274 0 -0 6.20391 357.786 481.648)" font-family="SimSun,'sans-serif'" font-size="1.42915">工程名</text>
+<text id="tt" transform="matrix(0.4 0 -0 0.6 357.786 481.648)" font-family="SimSun,'sans-serif'" font-size="14">工程名</text>
 </g>
 <g stroke-width="0.25" clip-path="url(#clipId0)" fill="none" stroke="rgb(255,0,0)" Geom_Id="1985">
 <polyline points="732.658,496.321 732.658,213.484 " Geom_Id="1986" />
