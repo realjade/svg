@@ -18,17 +18,11 @@
 	position: absolute;
 	top:10px;
 	left: 10px;
-	width: 80px;
+	width: 82px;
 	height: 500px;
 	background-color: #DDD;
-	border-top: 1px;
-	border-left: 1px;
-	border-right: 1px;
-	border-bottom: 2px;
-	border-bottom-color: #B7B7B7;
-	border-left-color: #CCC;
-	border-right-color: #CCC;
-	border-top-color: #CCC;
+	border: 1px #CCC solid;
+	border-bottom: 2px #B7B7B7 solid;
 	-webkit-box-shadow: 0 1px 0 0 #adadad;
 	box-shadow: 0 1px 0 0 #adadad;
 	border-style: solid;
@@ -37,23 +31,29 @@
 	-khtml-opacity: 0.8;
 	opacity: 0.8;
 }
+
+.svg-tool-group{
+	margin: 10px 0px 0px 7px;
+}
+.svg-tool-item{
+	display: inline-block;
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	border: 1px #CCC solid;
+	margin-right: 5px;
+	margin-bottom: 5px;
+	cursor: pointer;
+	text-align: center;
+}
+.svg-tool-item:hover{
+	background: #ccc;
+}
+.svg-tool-item.selected{
+	background: #ccc;
+}
+
 .svg-canvas svg{
 	position: absolute;
 	/**-webkit-text-size-adjust:none;**/
-}
-text, tspan, tref {
-}
-#chrome10px{
-
-
-}
-@font-face {
-font-family: 'chunk-webfont';
-src: url('../../includes/fonts/chunk-webfont.eot');
-src: url('../../includes/fonts/chunk-webfont.eot?#iefix') format('eot'),
-url('../../includes/fonts/chunk-webfont.woff') format('woff'),
-url('../../includes/fonts/chunk-webfont.ttf') format('truetype'),
-url('../../includes/fonts/chunk-webfont.svg') format('svg');
-font-weight: normal;
-font-style: normal;
 }

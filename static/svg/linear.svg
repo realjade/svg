@@ -33,10 +33,6 @@ style="fill:url(#orange_red1)"/>
 <text x='10' y='10' font-size="12px">10号字体</text>
 
 <g stroke-width="0.25" clip-path="url(#clipId0)" fill="rgb(255,0,0)" stroke="none" Geom_Id="1984">
-<text id="text" transform="matrix(4.34274 0 -0 6.20391 357.786 481.648)" font-size="12px">工程名</text>
-</g>
-
-<g stroke-width="0.25" clip-path="url(#clipId0)" fill="rgb(255,0,0)" stroke="none" Geom_Id="1984">
 <text transform="matrix(4.34274 0 -0 6.20391 357.786 481.648)" font-family="SimSun,'sans-serif'" font-size="1.42915">工程名</text>
 </g>
 

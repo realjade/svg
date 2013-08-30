@@ -18,9 +18,10 @@ $(function(){
 		return preview;
 	};
 	$.fn.preview_svg = function(loadUrl,options){
-		svgObj = null;
 		var self = $(this),
-			svgRoot,
+			$svg,//svg元素jquery对象
+			svgObj,//svg插件对象
+			svg,//svg对象
 			toolPanel,//操作面板
 			canvasPanel,//预览面板
 			propPanel,//属性面板
@@ -33,15 +34,23 @@ $(function(){
 			endX,//结束X坐标
 			endY,//结束Y坐标
 			moveTimer,//移动计时器
-			moveTimerDelta = 100,//移动时每隔500ms处理一次
+			moveTimerDelta = 100,//移动时每隔100ms处理一次
 			left = 0,//SVG左边距离
 			top = 0,//SVG上面距离
 			state, //状态标示
 			NONE = 0,//无状态
-			PAN = 1,//平移
-			ZOOMIN = 2,//放大
-			ZOOMOUT = 3 //缩小;
+			PICK = 1,//拾取
+			PAN = 2,//平移
+			PANTAG = 0,//平移标示，0代表不能移动，1代表可以移动
+			ZOOMIN = 3,//放大
+			ZOOMOUT = 4, //缩小
+			DRAWPATH = 5,//画路径
+			DRAWLINE = 6,//画直线
+			DRAWRECT = 7,//画矩形
+			DRAWCIRCLE = 8,//画圆形
+			DRAWTEXT = 9;//画文字
 		init();
+		//初始化
 		function init(){
 			self.options={
 				loadUrl:'',
@@ -51,40 +60,78 @@ $(function(){
 			jQuery.extend(self.options, options);
 			canvasPanel = $('<div class="svg-canvas"></div>');
 			canvasPanel.appendTo(self);
-			optPanel = $('<div class="svg-tool"></div>');
-			optPanel.appendTo(self);
+			toolPanel = $('<div class="svg-tool"></div>');
+			toolPanel.appendTo(self);
+			initToolPanel();
 			propPanel = $('<div class="svg-prop"></div>');
 			propPanel.appendTo(self);
+			initPropPanel();
 			self.css({position:'relative',overflow:'hidden'});
-			canvasPanel.svg({onLoad: loaded,loadURL: loadUrl});
+			load();
 		}
-		function loaded(svg){
-			svgObj = svg;
-			svgRoot = $(svg.root());
-			changeTextSize();
-			initViewBox();
-			bindEvent();
-			tools.log($('#text'));
-			//svg.configure({viewBox: '100, 0, 300, 200'});
-			//var opt = 'svg:ViewBox'; 
-		    //var parts = opt.split(':');
-		    //var params = {}; 
-		    //params['svg' + parts[1]] = values[opt][1];
+		//外部svg加载完成
+		function load(){
+			$.ajax({
+			    url: loadUrl,
+			    type: "GET",
+			    dataType: "text",
+			    success:function(resp){
+			    	$svg = $($.trim(resp));
+			    	$svg.appendTo(canvasPanel);
+			    	$svg.attr('id','eee');
+			    	svg = $svg[2];
+			    	svgObj = SVG($svg[2]);
+			    	changeTextSize();
+			    	initViewBox();
+					bindEvent();
+			    },
+			    progress: function(evt) {
+			        if (evt.lengthComputable){
+			            //console.log("Loaded " + parseInt( (evt.loaded / evt.total * 100), 10) + "%");
+			        }
+			        else {
+			            //console.log("Length not computable.");
+			        }
+			    }
+			 
+			});
 		}
+		//初始化操作面板
+		function initToolPanel(){
+			var tmpl =  '<div class="svg-tool-group">'+
+							'<div class="svg-tool-item svg-tool-pick selected" title="选择">选</div>' +
+							'<div class="svg-tool-item svg-tool-pan" title="移动">移</div>' +
+							'<div class="svg-tool-item svg-tool-zoomIn" title="放大">大</div>' +
+							'<div class="svg-tool-item svg-tool-zoomOut" title="缩小">小</div>' +
+							'<div class="svg-tool-item svg-tool-path" title="画线">线</div>' +
+							'<div class="svg-tool-item svg-tool-line" title="画直线">直</div>' +
+							'<div class="svg-tool-item svg-tool-rect" title="画矩形">矩形</div>' +
+							'<div class="svg-tool-item svg-tool-circle" title="画圆形">圆形</div>' +
+					    '</div>';
+			$(tmpl).appendTo(toolPanel);
+		}
+		//初始化属性面板
+		function initPropPanel(){
+
+		}
+		//初始化视口
 		function initViewBox(){
 			var w = canvasPanel.width(),
 				h = canvasPanel.height();
 			width = w;
 			height = h;
-			svgObj.configure({viewBox: '0, 0, '+w+', '+h});
+			svgObj.viewbox(0, 0, w, h);
 		}
 		//改变字体大小,解决chrome下12px以下字体显示问题。做一次字体设置和大小变换
 		function changeTextSize(){
-			$('text',svgRoot).each(function(){
+			if(!window.chrome) return false;
+			$('text',$svg).each(function(){
 				var text = $(this),
-					size = text.attr('font-size'),
-					trans = text.attr('transform').split('(')[1].split(')')[0].split(' '),
-					ctm = svgRoot[0].createSVGMatrix();
+					size = parseFloat(text.attr('font-size')),
+					trans = text.attr('transform'),
+					ctm = svg.createSVGMatrix();
+				if(!trans) return;
+				trans = trans.split('(')[1].split(')')[0].split(' ');
 				ctm.a = trans[0];
 				ctm.b = trans[1];
 				ctm.c = trans[2];
@@ -92,20 +139,22 @@ $(function(){
 				ctm.e = trans[4];
 				ctm.f = trans[5];
 				var s = size/fontSize;
-				var k = svgRoot[0].createSVGMatrix().scale(s);
+				var k = svg.createSVGMatrix().scale(s);
 				var matrix = ctm.multiply(k);
 				var t = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
                 text.attr("transform", t);
                 text.attr('font-size',fontSize);
 			});
 		}
+		//初始化所有事件
 		function bindEvent(){
 			//窗口改变后自动改变大小
 			$(window).resize(initViewBox);
-			svgRoot.bind('click', svgClick);
-			$('g',svgRoot).bind('mouseover', svgOver).bind('mouseout', svgOut);
-			svgRoot.bind('mousedown',svgMouseDown).bind('mouseup',svgMouseUp).bind('mousemove',svgMouseMove);
+			$svg.bind('click', svgClick);
+			$('g',$svg).bind('mouseover', svgOver).bind('mouseout', svgOut);
+			$svg.bind('mousedown',svgMouseDown).bind('mouseup',svgMouseUp).bind('mousemove',svgMouseMove);
 				   //.bind('mouseover', svgOver).bind('mouseout', svgOut)
+
 		    //$(svg._svg).animate(params, 2000); 
 			//tools.log(svg);
 			//$('svg').svgPan('tt');
@@ -117,42 +166,139 @@ $(function(){
 				}
                 return false; // prevent default
             });
+
+            //为tool面板添加事件
+            toolPanel.on('click','.svg-tool-pick',toolPick);
+            toolPanel.on('click','.svg-tool-pan',toolPan);
+            toolPanel.on('click','.svg-tool-zoomIn',toolZoomIn);
+            toolPanel.on('click','.svg-tool-zoomOut',toolZoomOut);
+            toolPanel.on('click','.svg-tool-path',toolPath);
+            toolPanel.on('click','.svg-tool-line',toolLine);
+            toolPanel.on('click','.svg-tool-rect',toolRect);
+            toolPanel.on('click','.svg-tool-circle',toolCircle);
 		}
-		function getEventPoint(event){
-			return {x:event.offsetX || event.pageX,y:event.offsetY || event.pageY};
+		
+		function toolPick(event){
+			$('.selected',toolPanel).removeClass('selected');
+			$(this).addClass('selected');
+			state = PICK;
+			tools.cancelBubble(event);
+		}
+		function toolPan(event){
+			$('.selected',toolPanel).removeClass('selected');
+			$(this).addClass('selected');
+			state = PAN;
+			tools.cancelBubble(event);
+		}
+		function toolZoomIn(event){
+			$('.selected',toolPanel).removeClass('selected');
+			$(this).addClass('selected');
+			state = ZOOMIN;
+			tools.cancelBubble(event);
+		}
+		function toolZoomOut(event){
+			$('.selected',toolPanel).removeClass('selected');
+			$(this).addClass('selected');
+			state = ZOOMOUT;
+			tools.cancelBubble(event);
+		}
+		function toolPath(event){
+			$('.selected',toolPanel).removeClass('selected');
+			$(this).addClass('selected');
+			state = DRAWPATH;
+			tools.cancelBubble(event);
+		}
+		function toolLine(event){
+			$('.selected',toolPanel).removeClass('selected');
+			$(this).addClass('selected');
+			state = DRAWLINE;
+			tools.cancelBubble(event);
+		}
+		function toolRect(event){
+			$('.selected',toolPanel).removeClass('selected');
+			$(this).addClass('selected');
+			state = DRAWRECT;
+		}
+		function toolCircle(event){
+			$('.selected',toolPanel).removeClass('selected');
+			$(this).addClass('selected');
+			state = DRAWCIRCLE;
+			tools.cancelBubble(event);
+		}
+		//状态管理
+		function stateManger(){
+
 		}
 		//鼠标点击
 		function svgClick(event){
+			return;
 			tools.log('mouseclick');
 			tools.log(event);
 			tools.log(event.target);
-
 		}
 		//鼠标按下
 		function svgMouseDown(event){
 			var point = getEventPoint(event);
 			startX = point.x;
 			startY = point.y;
-			tools.log('start:'+startX+','+startY);
-			state = PAN;
+			switch(state){
+				//平移操作
+				case PAN:
+					PANTAG = 1;
+					break;
+				default:
+					break;
+			}
 		}
 		//鼠标向上
 		function svgMouseUp(event){
-			state = NONE;
+			switch(state){
+				//平移操作
+				case PAN:
+					PANTAG = 0;
+					break;
+				default:
+					break;
+			}
 		}
 		//鼠标移动
 		function svgMouseMove(event){
-			if(state != PAN) return false;
+			//平移操作
+			switch(state){
+				//平移操作
+				case PAN:
+					if(PANTAG == 1){
+						var point = getEventPoint(event);
+						endX = point.x;
+						endY = point.y;
+						deltaX = endX - startX;
+						deltaY = endY - startY;
+						pan(deltaX,deltaY);
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		//鼠标经过
+		function svgOver(event){
+			return
+			tools.log(this);
+			tools.log('mouseover');
+			tools.log(event);
+		}
+		//鼠标移开
+		function svgOut(event){
+			return
+			tools.log('mouseout');
+			tools.log(event);
+		}
+		
+		//平移
+		function pan(deltaX,deltaY){
 			var now = Date.now();
 			if(moveTimer && (now - moveTimer) < moveTimerDelta) return false;
 			moveTimer = now;
-			var point = getEventPoint(event);
-			endX = point.x;
-			endY = point.y;
-			tools.log('end:'+endX+','+endY);
-			deltaX = endX - startX;
-			deltaY = endY - startY;
-			tools.log(deltaX+','+deltaY);
 			left += deltaX;
 			top += deltaY;
 			if(left >= 0){
@@ -161,29 +307,13 @@ $(function(){
 			if(top >= 0){
 				top = 0;
 			}
-			tools.log('left:'+left);
-			svgRoot.css('left',left);
-			svgRoot.css('top',top);
-		}
-		//鼠标经过
-		function svgOver(event){
-			tools.log(this);
-			tools.log('mouseover');
-			tools.log(event);
-		}
-		//鼠标移开
-		function svgOut(event){
-			tools.log('mouseout');
-			tools.log(event);
-		}
-		//状态管理
-		function stateManger(){
-
+			$svg.css('left',left);
+			$svg.css('top',top);
 		}
 		//放大
 		function zoomIn(){
 			scale += 1;
-			svgObj.configure({width:width*scale,height:height*scale});
+			svgObj.size(width*scale,height*scale);
 		}
 		//缩小
 		function zoomOut(){
@@ -192,11 +322,16 @@ $(function(){
 				return false;
 			}
 			scale -= 1;
-			svgObj.configure({width:width*scale,height:height*scale});
+			svgObj.size(width*scale,height*scale);
 		}
-		//平移
-		function pan(delta){
-
+		
+		function getEventPoint(event){
+			return {
+						x:event.clientX || event.pageX,
+						y:event.clientY || event.pageY,
+						offsetX:event.offsetX ||(event.originalEvent&&event.originalEvent.layerX),
+						offsetY:event.offsetY ||(event.originalEvent&&event.originalEvent.layerY)
+					};
 		}
 		return self;
 	};
