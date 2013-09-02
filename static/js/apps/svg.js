@@ -73,7 +73,7 @@ $(function(){
 		    //$(svg._svg).animate(params, 2000); 
 			//tools.log(svg);
 			//$('svg').svgPan('s1');
-			$(svgRoot).mousewheel(function(event, delta, deltaX, deltaY) {
+			self.mousewheel(function(event, delta, deltaX, deltaY) {
 				if(delta > 0){
 					zoomIn();
 				}else{
