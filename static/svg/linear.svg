@@ -19,13 +19,24 @@ stop-opacity:1"/>
 <stop offset="100%" style="stop-color:rgb(255,0,0);
 stop-opacity:1"/>
 </linearGradient>
+<clipPath id="clipId0">
+<path d="M0,768 1024,768 1024,0 0,0 z" Geom_Id="1" />
+</clipPath>
 </defs>
 
-<ellipse cx="200" cy="190" rx="85" ry="55"
+<ellipse cx="50" cy="190" rx="85" ry="55"
 style="fill:url(#orange_red)"/>
 
 
 <ellipse cx="500" cy="190" rx="85" ry="55"
 style="fill:url(#orange_red1)"/>
+<text x='10' y='10' font-size="12px">10号字体</text>
 
+<g stroke-width="0.25" clip-path="url(#clipId0)" fill="rgb(255,0,0)" stroke="none" Geom_Id="1984">
+<text transform="matrix(4.34274 0 -0 6.20391 357.786 481.648)" font-family="SimSun,'sans-serif'" font-size="1.42915">工程名</text>
+</g>
+
+<g stroke-width="0.25" clip-path="url(#clipId0)" fill="rgb(255,0,0)" stroke="none" Geom_Id="2000">
+<text transform="matrix(9.23181 0 -0 13.1883 189.192 612.634)" font-family="SimSun,'sans-serif'" font-size="1.42915">工程名</text>
+</g>
 </svg>
