@@ -312,9 +312,11 @@ $(function(){
 		}
 		//鼠标经过g标签
 		function groupOver(event){
-			var target = $(this),
-				box = this.getBBox();
-			hoverBox(box);
+			var box = this.getBBox();
+			currentShape = this;
+			if(state == PICK){
+				hoverBox(box);
+			}
 		}
 		//鼠标移开g标签
 		function groupOut(event){
@@ -325,8 +327,8 @@ $(function(){
 			var target = $(this);
 			switch(state){
 				case PICK:
-					var box = this.getBBox();
-					tools.log(target.attr('geom_id'));
+					var geom_id = target.attr('geom_id') || $(currentShape).attr('geom_id');
+					tools.log(geom_id);
 					break;
 				default:
 					break;
@@ -353,6 +355,10 @@ $(function(){
 		//给拾取的对象添加包围框
 		function pickBox(box){
 			pickBoxPath = pickBoxPath || 1;
+		}
+		//拾取属性
+		function pickProperty(geom_id){
+
 		}
 		//平移
 		function pan(deltaX,deltaY){
