@@ -157,20 +157,11 @@ $(function(){
 		function bindEvent(){
 			//窗口改变后自动改变大小
 			$(window).resize(initViewBox);
-<<<<<<< HEAD
-			$svg.bind('click', svgClick);
-			$('g',$svg).bind('mouseover', svgOver).bind('mouseout', svgOut);
-			$svg.bind('mousedown',svgMouseDown).bind('mouseup',svgMouseUp).bind('mousemove',svgMouseMove);
-				   //.bind('mouseover', svgOver).bind('mouseout', svgOut)
-
-		    //$(svg._svg).animate(params, 2000); 
-=======
 			$svg.click(svgClick);
 			//文本禁止选中
 			$svg.disableSelection();
 			$('g',$svg).mouseover(groupOver).mouseout(groupOut).click(groupClick);
 			$svg.mousedown(svgMouseDown).mouseup(svgMouseUp).mousemove(svgMouseMove);
->>>>>>> ec7f2d65557b9cffa453837d4bf3dcd2955dc039
 			self.mousewheel(function(event, delta, deltaX, deltaY) {
 				if(delta > 0){
 					zoomIn();
@@ -319,9 +310,6 @@ $(function(){
 			tools.cancelBubble(event);
 			tools.cancelDefault(event);
 		}
-<<<<<<< HEAD
-		
-=======
 		//鼠标经过g标签
 		function groupOver(event){
 			var box = this.getBBox();
@@ -372,7 +360,6 @@ $(function(){
 		function pickProperty(geom_id){
 
 		}
->>>>>>> ec7f2d65557b9cffa453837d4bf3dcd2955dc039
 		//平移
 		function pan(deltaX,deltaY){
 			var now = Date.now();
