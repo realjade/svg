@@ -3,6 +3,7 @@ from flask import Blueprint
 from flask import request, session, url_for, redirect, \
         render_template, abort, g, flash, json, Response, make_response, current_app,send_file
 from lib import const
+from lib import functions as f
 import os
 import string
 import types
@@ -26,6 +27,10 @@ def glodon():
 @module.route('/glodon/svg/')
 def glodon_svg():
     return render_template('glodon/svg.html', tab = 'glodon')
+
+@module.route('/glodon/svg/prop/<gid>/')
+def glodon_svg_prop(gid = None):
+    return f.succeed({gid:gid,random:''.join([choice(string.digits) for i in range(0,9)])})
 
 @module.route('/glodon/test/')
 def glodon_test():
