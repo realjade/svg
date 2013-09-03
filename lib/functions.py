@@ -3,12 +3,6 @@
 import os
 import utils as ut
 from flask import json, g, request, session
-import models as m
-from models.user import *
-from models.code import *
-from sqlalchemy import or_, func, distinct
-from sqlalchemy import desc, asc
-from sqlalchemy.orm import aliased
 import time
 from datetime import datetime
 import types

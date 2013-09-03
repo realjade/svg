@@ -44,11 +44,16 @@ $(function(){
 			PANTAG = 0,//平移标示，0代表不能移动，1代表可以移动
 			ZOOMIN = 3,//放大
 			ZOOMOUT = 4, //缩小
-			DRAWPATH = 5,//画路径
-			DRAWLINE = 6,//画直线
-			DRAWRECT = 7,//画矩形
-			DRAWCIRCLE = 8,//画圆形
-			DRAWTEXT = 9;//画文字
+			DRAW = 5,//画图
+			drawType,//画图类型
+			DRAWPATH = 1,//画路径
+			DRAWLINE = 2,//画直线
+			DRAWRECT = 3,//画矩形
+			DRAWCIRCLE = 4,//画圆形
+			DRAWTEXT = 5,//画文字
+			hoverBoxPath,//经过框
+			pickBoxPath,//拾取框
+			currentShape;//当前框中的形状
 		init();
 		//初始化
 		function init(){
@@ -62,10 +67,8 @@ $(function(){
 			canvasPanel.appendTo(self);
 			toolPanel = $('<div class="svg-tool"></div>');
 			toolPanel.appendTo(self);
-			initToolPanel();
 			propPanel = $('<div class="svg-prop"></div>');
 			propPanel.appendTo(self);
-			initPropPanel();
 			self.css({position:'relative',overflow:'hidden'});
 			load();
 		}
@@ -84,6 +87,8 @@ $(function(){
 			    	changeTextSize();
 			    	initViewBox();
 					bindEvent();
+					initToolPanel();
+					initPropPanel();
 			    },
 			    progress: function(evt) {
 			        if (evt.lengthComputable){
@@ -99,7 +104,7 @@ $(function(){
 		//初始化操作面板
 		function initToolPanel(){
 			var tmpl =  '<div class="svg-tool-group">'+
-							'<div class="svg-tool-item svg-tool-pick selected" title="选择">选</div>' +
+							'<div class="svg-tool-item svg-tool-pick" title="选择">选</div>' +
 							'<div class="svg-tool-item svg-tool-pan" title="移动">移</div>' +
 							'<div class="svg-tool-item svg-tool-zoomIn" title="放大">大</div>' +
 							'<div class="svg-tool-item svg-tool-zoomOut" title="缩小">小</div>' +
@@ -107,8 +112,10 @@ $(function(){
 							'<div class="svg-tool-item svg-tool-line" title="画直线">直</div>' +
 							'<div class="svg-tool-item svg-tool-rect" title="画矩形">矩形</div>' +
 							'<div class="svg-tool-item svg-tool-circle" title="画圆形">圆形</div>' +
+							'<div class="svg-tool-item svg-tool-text" title="画文字">字</div>' +
 					    '</div>';
 			$(tmpl).appendTo(toolPanel);
+			$('.svg-tool-pick',toolPanel).trigger('click');
 		}
 		//初始化属性面板
 		function initPropPanel(){
@@ -150,12 +157,20 @@ $(function(){
 		function bindEvent(){
 			//窗口改变后自动改变大小
 			$(window).resize(initViewBox);
+<<<<<<< HEAD
 			$svg.bind('click', svgClick);
 			$('g',$svg).bind('mouseover', svgOver).bind('mouseout', svgOut);
 			$svg.bind('mousedown',svgMouseDown).bind('mouseup',svgMouseUp).bind('mousemove',svgMouseMove);
 				   //.bind('mouseover', svgOver).bind('mouseout', svgOut)
 
 		    //$(svg._svg).animate(params, 2000); 
+=======
+			$svg.click(svgClick);
+			//文本禁止选中
+			$svg.disableSelection();
+			$('g',$svg).mouseover(groupOver).mouseout(groupOut).click(groupClick);
+			$svg.mousedown(svgMouseDown).mouseup(svgMouseUp).mousemove(svgMouseMove);
+>>>>>>> ec7f2d65557b9cffa453837d4bf3dcd2955dc039
 			self.mousewheel(function(event, delta, deltaX, deltaY) {
 				if(delta > 0){
 					zoomIn();
@@ -174,18 +189,21 @@ $(function(){
             toolPanel.on('click','.svg-tool-line',toolLine);
             toolPanel.on('click','.svg-tool-rect',toolRect);
             toolPanel.on('click','.svg-tool-circle',toolCircle);
+            toolPanel.on('click','.svg-tool-text',toolText);
 		}
 		
 		function toolPick(event){
 			$('.selected',toolPanel).removeClass('selected');
 			$(this).addClass('selected');
 			state = PICK;
+			$svg.css('cursor','crosshair');
 			tools.cancelBubble(event);
 		}
 		function toolPan(event){
 			$('.selected',toolPanel).removeClass('selected');
 			$(this).addClass('selected');
 			state = PAN;
+			$svg.css('cursor','move');
 			tools.cancelBubble(event);
 		}
 		function toolZoomIn(event){
@@ -203,24 +221,36 @@ $(function(){
 		function toolPath(event){
 			$('.selected',toolPanel).removeClass('selected');
 			$(this).addClass('selected');
-			state = DRAWPATH;
+			state = DRAW;
+			drawType = DRAWPATH;
 			tools.cancelBubble(event);
 		}
 		function toolLine(event){
 			$('.selected',toolPanel).removeClass('selected');
 			$(this).addClass('selected');
-			state = DRAWLINE;
+			state = DRAW;
+			drawType = DRAWLINE;
 			tools.cancelBubble(event);
 		}
 		function toolRect(event){
 			$('.selected',toolPanel).removeClass('selected');
 			$(this).addClass('selected');
-			state = DRAWRECT;
+			state = DRAW;
+			drawType = DRAWRECT;
+			tools.cancelBubble(event);
 		}
 		function toolCircle(event){
 			$('.selected',toolPanel).removeClass('selected');
 			$(this).addClass('selected');
-			state = DRAWCIRCLE;
+			state = DRAW;
+			drawType = DRAWCIRCLE;
+			tools.cancelBubble(event);
+		}
+		function toolText(event){
+			$('.selected',toolPanel).removeClass('selected');
+			$(this).addClass('selected');
+			drawType = DRAW;
+			state = DRAWTEXT;
 			tools.cancelBubble(event);
 		}
 		//状态管理
@@ -229,10 +259,19 @@ $(function(){
 		}
 		//鼠标点击
 		function svgClick(event){
-			return;
-			tools.log('mouseclick');
-			tools.log(event);
-			tools.log(event.target);
+			var point = getEventPoint(event),
+				target = event.target;
+			switch(state){
+				//平移操作
+				case ZOOMIN:
+					zoomIn();
+					break;
+				case ZOOMOUT:
+					zoomOut();
+					break;
+				default:
+					break;
+			}
 		}
 		//鼠标按下
 		function svgMouseDown(event){
@@ -277,8 +316,63 @@ $(function(){
 				default:
 					break;
 			}
+			tools.cancelBubble(event);
+			tools.cancelDefault(event);
 		}
+<<<<<<< HEAD
 		
+=======
+		//鼠标经过g标签
+		function groupOver(event){
+			var box = this.getBBox();
+			currentShape = this;
+			if(state == PICK){
+				hoverBox(box);
+			}
+		}
+		//鼠标移开g标签
+		function groupOut(event){
+			//hoverBoxPath.hide();
+		}
+		//鼠标点击g标签
+		function groupClick(event){
+			var target = $(this);
+			switch(state){
+				case PICK:
+					var geom_id = target.attr('geom_id') || $(currentShape).attr('geom_id');
+					tools.log(geom_id);
+					break;
+				default:
+					break;
+			}
+		}
+		//给经过的对象添加包围框
+		function hoverBox(box){
+			var p1 = {x:box.x+box.width,y:box.y},
+				p2 = {x:box.x+box.width,y:box.y+box.height},
+				p3 = {x:box.x,y:box.y+box.height},
+				str = 'M{0},{1} L{2},{3} {4},{5} {6},{7}z'.template(box.x,box.y,p1.x,p1.y,p2.x,p2.y,p3.x,p3.y);
+			if(hoverBoxPath){
+				hoverBoxPath.plot(str);
+			}else{
+				hoverBoxPath = svgObj.path(str,true);
+				hoverBoxPath.attr({
+				  fill: 'none',
+				  stroke: '#22C',
+				  'stroke-dasharray': "5,5"
+				}).style('pointer-events:none');
+			}
+			//hoverBoxPath.show();
+		}
+		//给拾取的对象添加包围框
+		function pickBox(box){
+			pickBoxPath = pickBoxPath || 1;
+		}
+		//拾取属性
+		function pickProperty(geom_id){
+
+		}
+>>>>>>> ec7f2d65557b9cffa453837d4bf3dcd2955dc039
 		//平移
 		function pan(deltaX,deltaY){
 			var now = Date.now();
@@ -317,6 +411,12 @@ $(function(){
 						offsetX:event.offsetX ||(event.originalEvent&&event.originalEvent.layerX),
 						offsetY:event.offsetY ||(event.originalEvent&&event.originalEvent.layerY)
 					};
+		}
+		String.prototype.template=function(){
+		    var args=arguments;
+		    return this.replace(/\{(\d+)\}/g, function(m, i){
+		        return args[i];
+		    });
 		}
 		return self;
 	};
