@@ -34,7 +34,7 @@
 (function addXhrProgressEvent($) {
     var originalXhr = $.ajaxSettings.xhr;
     $.ajaxSetup({
-        progress: function() { console.log("standard progress callback"); },
+        progress: jQuery.noop,
         xhr: function() {
             var req = originalXhr(), that = this;
             if (req) {

@@ -7,6 +7,7 @@ from lib import functions as f
 import os
 import string
 import types
+from random import choice
 
 # Flask 模块对象
 module = Blueprint('main', __name__)
@@ -28,9 +29,10 @@ def glodon():
 def glodon_svg():
     return render_template('glodon/svg.html', tab = 'glodon')
 
-@module.route('/glodon/svg/prop/<gid>/')
-def glodon_svg_prop(gid = None):
-    return f.succeed({gid:gid,random:''.join([choice(string.digits) for i in range(0,9)])})
+@module.route('/glodon/svg/prop/',methods=['GET','POST'])
+def glodon_svg_prop():
+    geom_id = request.values.get('geom_id',None)
+    return f.succeed({'geom_id':geom_id,'random':''.join([choice(string.digits) for i in range(0,9)])})
 
 @module.route('/glodon/test/')
 def glodon_test():
