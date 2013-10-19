@@ -49,7 +49,7 @@ $(function(){
             PANTAG = 0,//平移标示，0代表不能移动，1代表可以移动
             DRAW = 5,//画图
             DRAWTAG = 0,//画图标示，0代表不能画图，1代表可以画图
-            DRAWCOLOR,//画图颜色
+            DRAWCOLOR = "rgb(255, 0, 0)",//画图颜色
             drawType,//画图类型
             DRAWCLOUD = 1,//画云
             DRAWARROW = 2,//画箭头
@@ -234,7 +234,7 @@ $(function(){
             toolPanel.on('click','.svg-tool-arrow',toolDraw);
             toolPanel.on('click','.svg-tool-text',toolDraw);
             toolPanel.on('click','.svg-tool-shape',toolDraw);
-            toolPanel.on('click','.svg-tool-colorbtn',toolDraw);
+            toolPanel.on('click','.svg-tool-colorbtn',toolColorBtn);
             toolPanel.on('click','.svg-tool-color',toolColor);
             toolPanel.on('click','.svg-shapeMenu .svg-tool-item',toolShape);
             toolPanel.on('click','.svg-tool-cancel',toolCancel);
@@ -277,10 +277,10 @@ $(function(){
                 _cancelBtn.hide();
                 $('.svg-shapeMenu',toolPanel).show();
             }
-            if(_data_type === 'color'){
-                _cancelBtn.hide();
-                $('.svg-colorMenu',toolPanel).show();
-            }
+            cancelBubble(event);
+        }
+        function toolColorBtn(event){
+            $('.svg-colorMenu',toolPanel).show();
             cancelBubble(event);
         }
         //change color
@@ -601,7 +601,7 @@ $(function(){
                 drawShape.plot(x1,y1,x2,y2);
             }else{
                 drawShape = svgObj.line(x1,y1,x2,y2);
-                drawShape.attr({fill: '#f06', 'fill-opacity': 0.5, stroke: '#fff', 'stroke-width': 2});
+                drawShape.attr({fill: '#f06', 'fill-opacity': 0.5, stroke: DRAWCOLOR, 'stroke-width': 2});
                 shapeMatrix(drawShape);
             }
             drawShape.front();
