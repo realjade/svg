@@ -4,6 +4,5 @@
 
 <svg width="100%" height="100%" version="1.1"
 xmlns="http://www.w3.org/2000/svg">
-<clipPath id="clipText35"><rect x="370" y="185" width="150" height="45"></rect></clipPath>
-<g><rect stroke="#0A43C2" fill="#0A43C2" fill-opacity="0" class="leaflet-clickable" x="370" y="185" width="150" height="45" stroke-opacity="0.6" stroke-width="2" stroke-dasharray="10, 7" style="-webkit-transform: translate3d(0px, 0px, 0);"></rect><text class="leaflet-clickable" fill="#0A43C2" pointer-events="none" style="white-space: pre" xml:space="preserve" letter-spacing="0.0em" font-family="Helvetica" font-style="normal" font-size="19.8" font-weight="normal" text-decoration="none" x="370.75" y="205" dy="0" clip-path="url(#clipText35)"><tspan x="370.75">ddddddddddddd</tspan><tspan x="370.75" dy="1.15em">ddddddddddddd</tspan><tspan x="370.75" dy="1.15em">ddddddd</tspan></text></g>
+<path id="SvgjsPath1012" d="M10,10L100,200" stroke="#ff0000" stroke-width="2" fill-opacity="0.1" fill="#ff0000" stroke-opacity="0.6"></path>
 </svg>

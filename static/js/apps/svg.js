@@ -7,7 +7,8 @@ $(function(){
             self.options={
                 loadUrl:'',
                 type:''||(options&&options.type)||getType(loadUrl),
-                callback:jQuery.noop
+                callback:jQuery.noop,
+                modelId:'1'
             };
             jQuery.extend(self.options, options);
             preview = self['preview_'+self.options.type](loadUrl,self.options);
@@ -27,12 +28,15 @@ $(function(){
             popupPanel,//弹出框
             resizePanel = {},//改变大小的panel
             propPanel,//属性面板
+            messagePanel,//提示信息
+            messageTimer,
             annotationPanel,//批注面板
             fontSize = 24,//字体设置大小,主要解决chrome下12px显示问题
             width,//宽度
             height,//高度
             scale = 1,//缩放比例
-            breforeScale,
+            breforeScale,//前一次缩放比例
+            markScale,//比例记录
             startX,//开始X坐标
             startY,//开始Y坐标
             endX,//结束X坐标
@@ -56,7 +60,17 @@ $(function(){
             resizeDirection = 0,
             DRAW = 5,//画图
             DRAWTAG = 0,//画图标示，0代表不能画图，1代表可以画图
-            DRAWCOLOR = "rgb(255, 0, 0)",//画图颜色
+            DRAWCOLOR = 1,//画图颜色
+            COLORMAP = {
+                1:{'stroke':'#FF0000','fill':'#FF0000'},
+                2:{'stroke':'#FFFF00','fill':'#FFFF00'},
+                3:{'stroke':'#00FF00','fill':'#00FF00'},
+                4:{'stroke':'#5CEEEE','fill':'#5CEEEE'},
+                5:{'stroke':'#F776C8','fill':'#F776C8'},
+                6:{'stroke':'#F38109','fill':'#F38109'},
+                7:{'stroke':'#0A43C2','fill':'#0A43C2'},
+                8:{'stroke':'#ffffff','fill':'#ffffff'}
+            },
             drawType,//画图类型
             DRAWCLOUD = 1,//画云
             DRAWARROW = 2,//画箭头
@@ -91,6 +105,9 @@ $(function(){
                             '<div class="svg-popup-comment"><textarea placeholder="请输入备注信息"></textarea><a class="svg-popup-comment-cancel">取消</a><a class="svg-popup-comment-ok">确定</a></div></div>');
             popupPanel.appendTo(self);
             popupPanel.hide();
+            messagePanel = $('<div class="svg-message"></div>');
+            messagePanel.appendTo(self);
+            messagePanel.hide();
             //propPanel = $('<div class="svg-prop"></div>');
             //propPanel.appendTo(self);
             self.css({position:'absolute',top:'0px',bottom:'0px',left:'0px',right:'0px',overflow:'hidden'});
@@ -102,6 +119,9 @@ $(function(){
                 url: loadUrl,
                 type: "GET",
                 dataType: "text",
+                beforeSend:function(){
+                    showMessage(null,true);
+                },
                 success:function(resp){
                     $svg = $(resp.match(/<svg[\s\S]*<\/svg>/)[0]);
                     $svg.appendTo(canvasPanel);
@@ -129,45 +149,40 @@ $(function(){
         }
         //加载评论
         function loadComment(){
-            /*$.ajax({
-                url: '/glodon/svg/',
+            $.ajax({
+                url: '/databag/comment/',
                 type: "GET",
+                data:{modelId:options.modelId},
                 dataType: "json",
+                beforeSend:function(){
+                    showMessage("正在加载批注...",true);
+                },
                 success:function(resp){
-                    
+                    if(resp&&resp.result == 'success'){
+                        hideMessage();
+                        var _datas = resp.queryList;
+                        for(var i = 0,len = _datas.length;i < len;i++){
+                            var _data = _datas[i],
+                                _g = svgObj.group(),
+                                _path = _g.path(_data.pathInfo,true);
+                            _data.commentId = _data.id;
+                            delete _data.id;
+                            _path.attr($.extend({'stroke-width': 2,'fill-opacity':"0"},COLORMAP[_data.color]));
+                            $(_g.node).attr('transform',_data.matrix);
+                            addCommentTag(_g.node);
+                            _g.on('click',drawClick);
+                            _g.on('mouseover',drawOver);
+                            _g.on('mouseout',drawOut);
+                            _g.front();
+                            $(_g.node).data(_data);
+                            if(_data.type == DRAWTEXT){
+                                _path.attr('stroke-dasharray',"10, 10");
+                                drawTextContent(_g.node,_data.content);
+                            }
+                        }
+                    }
                 }
-            });*/
-            var _datas = [{color: "rgb(255, 0, 0)",
-content: undefined,
-h: 95,
-matrix: 'matrix(1.5390781563126252 0 0 1.5390781563126252 -435.30561122244495 0)',
-pathInfo: "M986,219L1113,219L1113,314,L986,314z",
-scale: 1,
-type: 7,
-w: 127,
-x: 986,
-y: 219},{color: "rgb(255, 0, 0)",
-content: undefined,
-h: 57,
-matrix: 'matrix(1.5390781563126252 0 0 1.5390781563126252 -435.30561122244495 0)',
-pathInfo: "M329.5,254A38.5,28.5,0,1,1,329.4,254 z",
-scale: 1,
-type: 6,
-w: 77,
-x: 291,
-y: 254}];
-            for(var i = 0,len = _datas.length;i < len;i++){
-                var _data = _datas[i],
-                    _g = svgObj.group(),
-                    _path = _g.path(_data.pathInfo,true);
-                _path.attr({stroke: _data.color, 'stroke-width': 2,'fill-opacity':"0"});
-                $(_g.node).attr('transform',_data.matrix);
-                _g.on('click',drawClick);
-                _g.on('mouseover',drawOver);
-                _g.on('mouseout',drawOut);
-                _g.front();
-                $(_g.node).data(_data);
-            }
+            });  
         }
         //初始化操作面板
         function initToolPanel(){
@@ -175,6 +190,7 @@ y: 254}];
                             '<a class="svg-tool-item" title="放大"><i class="svg-tool-zoomIn"></i></a>' +
                             '<a class="svg-tool-item" title="缩小"><i class="svg-tool-zoomOut"></i></a>' +
                             '<a class="svg-tool-item" title="全屏"><i class="svg-tool-fullScreen"></i></a>' +
+                            '<a class="svg-tool-item" title="隐藏批注"><i class="svg-tool-showhide" data-type="show"></i></a>' +
                             '<a class="svg-tool-item"><i class="svg-tool-cloud" drawType=1></i></a>' +
                             '<a class="svg-tool-item"><i class="svg-tool-arrow" drawType=2></i></a>' +
                             '<a class="svg-tool-item"><i class="svg-tool-text" drawType=3></i></a>' +
@@ -189,16 +205,16 @@ y: 254}];
                         '</div>' +
                         '<div class="svg-tooltip svg-colorMenu" style="display:none;">' +
                             '<div>' +
-                                '<a class="svg-tool-color" style="background-color: rgb(255, 0, 0);"></a>' +
-                                '<a class="svg-tool-color" style="background-color: rgb(255, 255, 0);"></a>' +
-                                '<a class="svg-tool-color" style="background-color: rgb(0, 255, 0);"></a>' +
-                                '<a class="svg-tool-color" style="background-color: rgb(92, 238, 238);"></a>' +
+                                '<a class="svg-tool-color" style="background-color: rgb(255, 0, 0);" data-color=1></a>' +
+                                '<a class="svg-tool-color" style="background-color: rgb(255, 255, 0);" data-color=2></a>' +
+                                '<a class="svg-tool-color" style="background-color: rgb(0, 255, 0);" data-color=3></a>' +
+                                '<a class="svg-tool-color" style="background-color: rgb(92, 238, 238);" data-color=4></a>' +
                             '</div>' +
                             '<div>' +
-                                '<a class="svg-tool-color" style="background-color: rgb(247, 118, 200);"></a>' +
-                                '<a class="svg-tool-color" style="background-color: rgb(243, 129, 9);"></a>' +
-                                '<a class="svg-tool-color" style="background-color: rgb(10, 67, 194);"></a>' +
-                                '<a class="svg-tool-color" style="background-color: rgb(0, 0, 0);"></a>' +
+                                '<a class="svg-tool-color" style="background-color: rgb(247, 118, 200);" data-color=5></a>' +
+                                '<a class="svg-tool-color" style="background-color: rgb(243, 129, 9);" data-color=6></a>' +
+                                '<a class="svg-tool-color" style="background-color: rgb(10, 67, 194);" data-color=7></a>' +
+                                '<a class="svg-tool-color" style="background-color: #ffffff;" data-color=8></a>' +
                             '</div>' +
                         '</div>' +
                         '<div class="svg-tool-cancel" style="display:none;">取消' +
@@ -239,12 +255,12 @@ y: 254}];
                 viewbox = svgObj.viewbox();
             width = w;
             height = h;
-            if(w < viewbox.width){
+            /*if(w < viewbox.width){
                 w = viewbox.width
             }
             if(h < viewbox.height){
                 h = viewbox.height;
-            }
+            }*/
             svgObj.viewbox(0, 0, w, h);
         }
         //改变字体大小,解决chrome下12px以下字体显示问题。做一次字体设置和大小变换
@@ -282,11 +298,17 @@ y: 254}];
             $svg.on('mouseover','*',groupOver).on('mouseout','*',groupOut);
             $(document).on('keydown',svgKeyDown);
             $svg.mousedown(svgMouseDown).mouseup(svgMouseUp).mousemove(svgMouseMove);
+            self.bind('touchstart',svgMouseDown).bind('touchmove',svgMouseMove).bind('touchend',svgMouseUp);
             self.mousewheel(function(event, delta, deltaX, deltaY) {
                 if(delta > 0){
                     zoomIn();
                 }else{
                     zoomOut();
+                }
+                if(selectedShape){
+                    setPosition('selected');
+                }else{
+                    setPosition('cursor');
                 }
                 return false; // prevent default
             });
@@ -295,12 +317,15 @@ y: 254}];
             toolPanel.on('click','.svg-tool-zoomIn',toolZoomIn);
             toolPanel.on('click','.svg-tool-zoomOut',toolZoomOut);
             toolPanel.on('click','.svg-tool-fullScreen',toolFullScreen);
+            toolPanel.on('click','.svg-tool-showhide',toolShowHide);
             toolPanel.on('click','.svg-tool-cloud',toolDraw);
             toolPanel.on('click','.svg-tool-arrow',toolDraw);
             toolPanel.on('click','.svg-tool-text',toolDraw);
             toolPanel.on('click','.svg-tool-shape',toolDraw);
             toolPanel.on('click','.svg-tool-colorbtn',toolColorBtn);
             toolPanel.on('click','.svg-tool-color',toolColor);
+            toolPanel.on('mouseover','.svg-tool-color',toolColorOver);
+            toolPanel.on('mouseout','.svg-tool-color',toolColorOut);
             toolPanel.on('click','.svg-shapeMenu .svg-tool-item',toolShape);
             toolPanel.on('click','.svg-tool-cancel',toolCancel);
             resizePanel.leftup.on('mousedown',resizeStart);
@@ -311,10 +336,12 @@ y: 254}];
             popupPanel.on('click','.svg-popup-commentbtn',showPopupComment);
             popupPanel.on('click','.svg-popup-comment-ok',popupCommentOk);
             popupPanel.on('click','.svg-popup-comment-cancel',popupCommentCancel);
-            /*self.bind('zoomIn',function(){
-
+            popupPanel.on('keyup','.svg-popup-comment textarea',popupCommentInput);
+            self.bind('zoomIn zoomOut zoomScale',function(){
+                if(selectedShape)
+                    showPopup(selectedShape);
             });
-            self.bind('zoomOut',function(){
+            /*self.bind('zoomOut',function(){
 
             });
             self.bind('fullscreen',function(){
@@ -334,7 +361,19 @@ y: 254}];
             fullScreen();
             cancelBubble(event);
         }
+        function toolShowHide(event){
+            var _type = $(this).attr('data-type');
+            if(_type == 'show'){
+                $('g[svg-type="comment"]').hide();
+                $(this).attr('data-type','hide').parent().attr('title','显示批注');
+            }else{
+                $('g[svg-type="comment"]').show();
+                $(this).attr('data-type','show').parent().attr('title','隐藏批注');
+            }
+            cancelBubble(event);
+        }
         function toolDraw(event){
+            cancelSelected();
             var _toolgroup = $('.svg-tool-group',toolPanel);
             $('.selected',_toolgroup).removeClass('selected');
             $(this).parent().addClass('selected');
@@ -358,10 +397,34 @@ y: 254}];
         }
         //change color
         function toolColor(event){
-            DRAWCOLOR = $(this).css('background-color');
-            $('.svg-tool-colorbtn',toolPanel).css('background-color',DRAWCOLOR);
+            DRAWCOLOR = parseInt($(this).attr('data-color'),10);
+            $('.svg-tool-colorbtn',toolPanel).css('background-color',COLORMAP[DRAWCOLOR].stroke);
             $('.svg-colorMenu',toolPanel).hide();
+            if(selectedShape){
+                var _color = parseInt($(this).attr('data-color'),10);
+                $('path',$(selectedShape)).attr(COLORMAP[_color]);
+                refreshDrawPath(selectedShape,{color:_color});
+                cancelBubble(event);
+            }
             cancelBubble(event);
+        }
+        function toolColorOver(event){
+            if(selectedShape){
+                var _color = parseInt($(this).attr('data-color'),10);
+                $('path',$(selectedShape)).attr(COLORMAP[_color]);
+                var _data = $(selectedShape).data();
+                if(_data.type == DRAWTEXT){
+                   changeTextColor(selectedShape,_color);
+                }
+                cancelBubble(event);
+            }   
+        }
+        function toolColorOut(event){
+            if(selectedShape){
+                var $selectedShape = $(selectedShape);
+                $('path',$selectedShape).attr(COLORMAP[$selectedShape.data().color]);
+                cancelBubble(event);
+            }
         }
         //change shape
         function toolShape(event){
@@ -374,6 +437,7 @@ y: 254}];
             $('.selected',_shapeMenu).removeClass('selected');
             $(this).addClass('selected');
             _shapeBtn.removeClass('svg-tool-rect svg-tool-circle svg-tool-x svg-tool-line');
+            $svg.css('cursor','crosshair');
             _shapeBtn.addClass($(this).attr('data-class'));
             cancelBubble(event);
         }
@@ -384,6 +448,7 @@ y: 254}];
             _cancelBtn.hide();
             state = NONE;
             $svg.css('cursor','move');
+            $('.svg-shapeMenu',toolPanel).hide();
             _shapeBtn.removeClass('svg-tool-rect svg-tool-circle svg-tool-x svg-tool-line');
             cancelBubble(event);
         }
@@ -446,6 +511,8 @@ y: 254}];
         function svgMouseUp(event){
             mouseState = 0;
             var point = getEventPoint(event);
+            offsetEndX = point.offsetX;
+            offsetEndY = point.offsetY;
             switch(state){
                 //画图操作
                 case DRAW:
@@ -460,8 +527,6 @@ y: 254}];
                     break;
                 case RESIZE:
                     PANTAG = 0;
-                    offsetEndX = point.offsetX;
-                    offsetEndY = point.offsetY;
                     resizeEnd(offsetEndX,offsetEndY);
                 default:
                     //平移操作
@@ -477,11 +542,12 @@ y: 254}];
             var point = getEventPoint(event);
             endX = point.x;
             endY = point.y;
+            offsetEndX = point.offsetX;
+            offsetEndY = point.offsetY;
+            markScale = scale;
             switch(state){
                 //画图操作
                 case DRAW:
-                    offsetEndX = point.offsetX;
-                    offsetEndY = point.offsetY;
                     if(DRAWTAG == 1){
                         var point = getEventPoint(event);
                         draw(offsetEndX,offsetEndY);
@@ -495,8 +561,6 @@ y: 254}];
                     }
                     break;
                 case RESIZE:
-                    offsetEndX = point.offsetX;
-                    offsetEndY = point.offsetY;
                     if(PANTAG == 1){
                         var point = getEventPoint(event);
                         resizePan(offsetEndX,offsetEndY);
@@ -504,7 +568,6 @@ y: 254}];
                     break;
                 default:
                     //平移操作
-
                     if(PANTAG == 1){
                         var deltaX = endX - startX,
                             deltaY = endY - startY;
@@ -554,6 +617,7 @@ y: 254}];
         //拾取属性
         function pickProperty(geom_id){
             if(!geom_id) return false;
+            return false;
             $.ajax({
                 url: self.options.pickUrl,
                 data:{geom_id:geom_id},
@@ -598,10 +662,9 @@ y: 254}];
         }
         //放大
         function zoomIn(){
+            breforeScale = scale;
             scale += 1;
             svgObj.size(width*scale,height*scale);
-            breforeScale = scale;
-            setCenter();
             self.trigger('zoomIn');
         }
         //缩小
@@ -610,29 +673,52 @@ y: 254}];
                 scale = 1;
                 return false;
             }
-            scale -= 1;
             breforeScale = scale;
+            scale -= 1;
             svgObj.size(width*scale,height*scale);
-            setCenter();
             self.trigger('zoomOut');
         }
         function zoomScale(_scale){
+            breforeScale = scale;
             svgObj.size(width*_scale,height*_scale);
             scale = _scale;
-            setCenter();
             self.trigger('zoomScale');
         }
         //居中
-        function setCenter(){
-            var l = -(scale-1)*width/2,
-                t = -(scale-1)*height/2;
-            $svg.css('left',l);
-            $svg.css('top',t);
-            left = l;
-            top = t;
-            $svg.children().each(function(){
-
-            });
+        function setPosition(_type){
+            var _l = 0,
+                _t = 0;
+            switch(_type){
+                case 'center':
+                    var _l = -(scale-1)*width/2,
+                        _t = -(scale-1)*height/2;
+                    
+                    break;
+                case 'cursor':
+                    var _sc = scale/markScale;
+                    var _l = -offsetEndX*_sc + endX,
+                        _t = -offsetEndY*_sc + endY;
+                    break;
+                case 'selected':
+                    if(!selectedShape) return;
+                    var _offset = $(selectedShape).offset(),
+                        _cbox = selectedShape.getBoundingClientRect(),
+                        _x = _offset.left,
+                        _y = _offset.top,
+                        _w = _cbox.width,
+                        _h = _cbox.height;
+                    _l = -(_x + _w/2) + width/2,
+                    _t = -(_y + _h/2) + height/2;
+                    break;
+            }
+            _l = _l>0?0:_l;
+            _t = _t>0?0:_t;
+            $svg.css('left',_l);
+            $svg.css('top',_t);
+            left = _l;
+            top = _t;
+            if(selectedShape)
+                showPopup(selectedShape);
         }
         //全屏
         function fullScreen(){
@@ -651,40 +737,28 @@ y: 254}];
             drawPath(drawType,_x,_y,_w,_h,DRAWCOLOR);
         }
         function drawEnd(){
-            switch(drawType){
-                case DRAWCLOUD:
-                    break;
-                case DRAWARROW:
-                    
-                    break;
-                case DRAWTEXT:
-                    break;
-                case DRAWLINE:
-                    //drawLine(offsetStartX,offsetStartY,offsetEndX,offsetEndY);
-                    break;
-                case DRAWX:
-                    break;
-                case DRAWCIRCLE:
-                    break;
-                case DRAWRECT:
-                    break;
-            }
             if(drawShape){
                 var _data = $(drawShape.group.node).data(),
                     d = {};
                 $.extend(d,_data);
+                d.modelId = options.modelId;
                 $.ajax({
-                    url:'/glodon/svg/',
+                    url:'/databag/comment',
                     type:'post',
-                    data:{},
+                    data:JSON.stringify(d),
                     contentType:'application/json;charset=utf-8',
-                    success:function(res){
-                        tools.log('success');
-                        //drawShape = null;
+                    success:function(resp){
+                        if(resp&&resp.result == 'success'){
+                            showMessage("创建批注成功");
+                            _data.commentId =  resp.commentId;
+                        }else{
+                            showMessage("创建批注失败");
+                        }
+                        drawShape = null;
                     },
                     error:function(res){
-                        tools.log('error');
-                        //drawShape = null;
+                        showMessage("创建批注失败");
+                        drawShape = null;
                     }
                 });
             }
@@ -699,14 +773,17 @@ y: 254}];
                 drawShape = {};
                 drawShape.group = svgObj.group();
                 drawShape.path = drawShape.group.path(_pathStr,true);
-                drawShape.path.attr({stroke: _color, 'stroke-width': 2,'fill-opacity':"0"});
+                drawShape.path.attr($.extend({'stroke-width': 2,'fill-opacity':"0"},COLORMAP[_color]));
+                if(drawType == DRAWTEXT){
+                    drawShape.path.attr('stroke-dasharray',"10, 10");
+                }
                 shapeMatrix(drawShape.group);
+                addCommentTag(drawShape.group.node);
                 drawShape.group.on('click',drawClick);
                 drawShape.group.on('mouseover',drawOver);
                 drawShape.group.on('mouseout',drawOut);
             }
             drawShape.group.front();
-            tools.log({x:_x,y:_y,w:_w,h:_h,color:_color,content:_content,type:_type,scale:scale,matrix:$(drawShape.group.node).attr('matrix'),pathInfo:_pathStr});
             $(drawShape.group.node).data({x:_x,y:_y,w:_w,h:_h,color:_color,content:_content,type:_type,scale:scale,matrix:$(drawShape.group.node).attr('transform'),pathInfo:_pathStr});
         }
         function refreshDrawPath(_pathDom,_options,_record){
@@ -718,9 +795,36 @@ y: 254}];
             if(_options.x || _options.y || _options.w || _options.h){
                 var _pathStr = getDrawPathStr(_data.type,_data.x,_data.y,_data.w,_data.h);
                 _path.plot(_pathStr);
+                _d.pathInfo = _pathStr;
+                _data.pathInfo = _pathStr;
             }
             if(_record !== false){
                 $(_pathDom).data(_data);
+                $.ajax({
+                    url:'/databag/comment/'+_data.commentId,
+                    type:'put',
+                    data:JSON.stringify(_data),
+                    contentType:'application/json;charset=utf-8',
+                    success:function(resp){
+                        if(resp&&resp.result == 'success'){
+                            showMessage("更新批注成功");
+                        }else{
+                            showMessage("更新批注失败");
+                        }
+                        drawShape = null;
+                    },
+                    error:function(res){
+                        showMessage("更新批注失败");
+                        drawShape = null;
+                    }
+                });
+            }
+            if(_data.type == DRAWTEXT&&$('text',$(_pathDom)).length){
+                var _text = $('text',$(_pathDom))[0].instance;
+                _text.move(_data.x,_data.y);
+                $('rect',_text.clipper.node)[0].instance.move(_data.x,_data.y);
+                _text.clipper.move(_data.x,_data.y);
+                drawTextContent(_pathDom);
             }
             return _data;
         }
@@ -805,20 +909,22 @@ y: 254}];
                 case DRAWRECT:
                     _pathStr = 'M{0},{1}L{2},{3}L{4},{5},L{6},{7}z'.template(_x,_y,_ex,_y,_ex,_ey,_x,_ey);
                     break;
+                case DRAWTEXT:
+                    _pathStr = 'M{0},{1}L{2},{3}L{4},{5},L{6},{7}z'.template(_x,_y,_ex,_y,_ex,_ey,_x,_ey);
+                    break;
             }
             return _pathStr;
         }
-        function drawText(){
-
-        }
         //click draw object
         function drawClick(event){
+            cancelSelected();
             state = SELECTED;
             selectedShape = this;
+            $('path',$(this)).attr({'stroke-opacity':0.6,'fill-opacity':0.1});
+            var _data = $(this).data();
+            $('.svg-tool-colorbtn',toolPanel).css('background-color',COLORMAP[_data.color].stroke);
             showResize(selectedShape);
             showPopup(selectedShape);
-            //breforeScale = scale;
-            //zoomScale(data.scale);
             cancelBubble(event);
         }
         function drawOver(event){
@@ -843,14 +949,17 @@ y: 254}];
                 cancelSelected();
                 hidePopup();
                 $.ajax({
-                    url:'',
-                    data:{commentId:_data.commentId},
+                    url:'/databag/comment/'+_data.commentId,
                     type:'DELETE',
-                    success:function(){
-
+                    success:function(resp){
+                        if(resp&&resp.result == 'success'){
+                            showMessage("删除批注成功");
+                        }else{
+                            showMessage("删除批注失败");
+                        }
                     },
                     error:function(){
-
+                        showMessage("删除批注失败");
                     }
                 });
             }
@@ -867,7 +976,11 @@ y: 254}];
             resizePanel.rightbottom.move(_x+_w+15,_y+_h+15);
             resizePanel.leftbottom.move(_x-15,_y+_h+15);
             var _tranf = $(_svgobj).attr('transform');
-            $(resizePanel.group.node).attr('transform',_tranf);
+            if(_tranf){
+                $(resizePanel.group.node).attr('transform',_tranf);
+            }else{
+                $(resizePanel.group.node).attr('transform','');
+            }
         }
         function hideResize(){
             resizePanel.group.hide();
@@ -895,6 +1008,9 @@ y: 254}];
         function showPopupComment(event){
             $('.svg-popup-opt',popupPanel).hide();
             $('.svg-popup-comment',popupPanel).show();
+            var _commentInput = $('.svg-popup-comment textarea',popupPanel);
+            _commentInput.select();
+            _commentInput.val($(selectedShape).data().content);
             refreshPopupPosition(selectedShape);
             cancelBubble(event);
         }
@@ -902,17 +1018,80 @@ y: 254}];
             $('.svg-popup-opt',popupPanel).show();
             $('.svg-popup-comment',popupPanel).hide();
             refreshPopupPosition(selectedShape);
+            var _data = $(selectedShape).data();
+            if(_data.type == DRAWTEXT){
+                drawTextContent(selectedShape,_data.content);
+            }
         }
         function popupCommentOk(event){
             var _commentInput = $('.svg-popup-comment textarea',popupPanel),
                 _content = _commentInput.val();
             refreshDrawPath(selectedShape,{content:_content});
-            hidePopupComment();
+            showPopup(selectedShape);
             cancelBubble(event);
         }
         function popupCommentCancel(event){
             hidePopupComment();
             cancelBubble(event);
+        }
+        function popupCommentInput(event){
+            var _data = $(selectedShape).data();
+            if(_data.type != DRAWTEXT) return false;
+            var _content = $(this).val();
+            drawTextContent(selectedShape,_content);
+            cancelBubble(event);
+        }
+        function drawTextContent(_svgObj,_content){
+            var _text = $('text',_svgObj);
+            if(_text.length){
+                _text.remove();
+                _text[0].instance.clipper.remove();
+            }
+            var _box = _svgObj.getBBox(),
+                _data = $(_svgObj).data(),
+                _x = _box.x,
+                _y = _box.y,
+                _w = _box.width,
+                _h = _box.height,
+                _result = '',
+                cw = 0,
+                pw = 8,
+                ph = 20,
+                rh = 20;
+            _content = _content || _data.content;
+            if(!_content) return false;
+            for(var i = 0,_len = _content.length;i < _len;i++){
+                var l = _content[i].charCodeAt() > 255?2:1;
+                var tw = cw + l*pw;
+                if(tw > _w){
+                    _result += '\n' + _content[i];
+                    cw = l*pw;
+                    rh += ph;
+                }else{
+                    _result += _content[i];
+                    cw = tw;
+                }
+            }
+            if(!_result){
+                $('text',_svgObj).remove();
+            }else{
+                var _group = _svgObj.instance,
+                    _text = _group.text(_result);
+                _text.font({
+                  family:   'serif',
+                  size:     16,
+                  'fill-opacity':1,
+                  'fill':COLORMAP[_data.color].stroke
+                });
+                _text.move(_x,_y);
+                var _rect = svgObj.rect(_w,_h).move(_x,_y);
+                _text.clipWith(_rect);
+            }
+        }
+        function changeTextColor(_svgObj,_color){
+            var _text = $('text',_svgObj);
+            if(!_text.length) return false;
+            _text[0].instance.font({'fill':COLORMAP[_color].stroke});
         }
         //选择图形平移
         function selectedPan(deltaX,deltaY){
@@ -927,6 +1106,9 @@ y: 254}];
             hidePopup();
         }
         function selectedEnd(deltaX,deltaY){
+            if(deltaX == 0 && deltaY == 0){
+                return false;
+            }
             var data = $(selectedShape).data(),
                 _x = data.x + deltaX,
                 _y = data.y + deltaY;
@@ -937,7 +1119,10 @@ y: 254}];
             state = NONE;
             hideResize();
             hidePopup();
-            //zoomScale(breforeScale);
+            if(selectedShape){
+                $('path',$(selectedShape)).attr({'stroke-opacity':1,'fill-opacity':0});
+            }
+            $('.svg-tool-colorbtn',toolPanel).css('background-color',COLORMAP[DRAWCOLOR].stroke);
             selectedShape = null;
         }
         function resizePan(offsetEndX,offsetEndY){
@@ -995,7 +1180,20 @@ y: 254}];
             }
             return {x:_x,y:_y,w:_w,h:_h};
         }
-        function drawAnnotation(x,y,width,height,option){
+        function showMessage(_message,_noTimer){
+            _message = _message || "正在加载...";
+            messagePanel.html(_message).css('left',canvasPanel.width()/2 - messagePanel.width()/2).show();
+            clearTimeout(messageTimer);
+            if(!_noTimer){
+                messageTimer = setTimeout(function(){
+                    messagePanel.fadeOut('slow');
+                }, 3000);
+            }
+        }
+        function hideMessage(){
+            messagePanel.hide();
+        }
+        /*function drawAnnotation(x,y,width,height,option){
             var shape = annotationShape(x,y,width,height,option);
         }
 
@@ -1118,14 +1316,19 @@ y: 254}];
             h = h<rh?rh:h;
             drawShape.text.move(x+2,y-h*0.1);
             refreshPath(drawShape.path,x,y,w,h);
-        }
+        }*/
         function shapeMatrix(element){
+            if(!svg.getCTM()) return;
             var matrix = svg.getCTM().inverse(),
-                m = matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f
+                m = matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f;
             element.transform('matrix', m);
             //element.on('mouseover', function(){
             //  hoverBox(element.bbox(),m);
             //});
+        }
+        function addCommentTag(_svgObj){
+            if(!_svgObj) return false;
+            $(_svgObj).attr('svg-type','comment');
         }
         function setCTM(element, matrix) {
             var s = "matrix(" + matrix.a + "," + matrix.b + "," + matrix.c + "," + matrix.d + "," + matrix.e + "," + matrix.f + ")";
@@ -1133,8 +1336,8 @@ y: 254}];
         }
         function getEventPoint(event){
             return {
-                        x:event.clientX || event.pageX,
-                        y:event.clientY || event.pageY,
+                        x:event.clientX || event.pageX || event.originalEvent.clientX || event.originalEvent.pageX,
+                        y:event.clientY || event.pageY || event.originalEvent.clientY || event.originalEvent.pageY,
                         offsetX:event.offsetX ||(event.originalEvent&&event.originalEvent.layerX),
                         offsetY:event.offsetY ||(event.originalEvent&&event.originalEvent.layerY)
                     };
@@ -1142,14 +1345,18 @@ y: 254}];
         function cancelBubble(_event) {
             if (_event && _event.stopPropagation)
                 _event.stopPropagation();
-            else
-                window.event.cancelBubble=true;
+            else{
+                if(window.event)
+                    window.event.cancelBubble=true;
+            }
+                
         }
         function cancelDefault(_event) {
             if(_event && _event.preventDefault){
                 _event.preventDefault();
             } else{
-                window.event.returnValue = false;
+                if(window.event)
+                    window.event.returnValue = false;
             }
             return false;
         }

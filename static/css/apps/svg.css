@@ -202,7 +202,7 @@
 }
 .svg-shapeMenu{
 	right:55px;
-	top:191px;
+	top:226px;
 }
 .svg-shapeMenu:after{
 	top:14px;
@@ -223,7 +223,7 @@
 }
 .svg-colorMenu{
 	right:55px;
-	top:214px;
+	top:244px;
 }
 .svg-tool-cancel{
 	background: rgba(200,200,200,0.5);
@@ -301,8 +301,24 @@
 	color:#333;
 	float: right;
 	margin-left: 5px;
+	cursor: pointer;
 }
-
+.svg-message{
+  background-color: #F8F8CD;
+  border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+  -moz-box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+  color: #333333;
+  line-height: 15px;
+  padding: 8px 30px;
+  position: absolute;
+  text-align: center;
+  top: 10px;
+  z-index: 2000;
+}
 .svg-prop{
 	position: absolute;
 	top:10px;
